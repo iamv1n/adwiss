@@ -1,0 +1,7 @@
+[
+  {"results": [
+    {"asset": {"resourceName": "customers/7778889999/assets/301", "id": "301", "name": "Hero 1200x628", "type": "IMAGE", "imageAsset": {"fullSize": {"url": "https://tpc.googlesyndication.com/simgad/301", "widthPixels": "1200", "heightPixels": "628"}}}},
+    {"asset": {"resourceName": "customers/7778889999/assets/302", "id": "302", "type": "YOUTUBE_VIDEO", "youtubeVideoAsset": {"youtubeVideoId": "dQw4w9WgXcQ", "youtubeVideoTitle": "Launch film"}}},
+    {"asset": {"resourceName": "customers/7778889999/assets/303", "id": "303", "type": "TEXT", "textAsset": {"text": "Free shipping today"}}}
+  ]}
+]

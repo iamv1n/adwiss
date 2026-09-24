@@ -1,0 +1,6 @@
+[
+  {"results": [
+    {"campaign": {"id": "111"}, "adGroup": {"id": "5001"}, "adGroupAd": {"resourceName": "customers/7778889999/adGroupAds/5001~9001", "status": "ENABLED", "ad": {"resourceName": "customers/7778889999/ads/9001", "id": "9001", "type": "RESPONSIVE_SEARCH_AD", "finalUrls": ["https://example.com"]}, "policySummary": {"approvalStatus": "APPROVED"}}},
+    {"campaign": {"id": "111"}, "adGroup": {"id": "5001"}, "adGroupAd": {"status": "REMOVED", "ad": {"id": "9002", "type": "EXPANDED_TEXT_AD", "name": "Legacy ETA"}}}
+  ]}
+]

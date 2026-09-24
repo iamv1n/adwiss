@@ -1,0 +1,6 @@
+[
+  {"results": [
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "segments": {"date": "2026-09-01", "hour": 0}, "metrics": {"impressions": "40", "clicks": "2", "costMicros": "1000000"}},
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "segments": {"date": "2026-09-01", "hour": 23}, "metrics": {"impressions": "60", "clicks": "5", "costMicros": "2500000", "conversions": 1, "conversionsValue": 19.99}}
+  ]}
+]

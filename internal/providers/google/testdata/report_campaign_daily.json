@@ -1,0 +1,6 @@
+[
+  {"results": [
+    {"customer": {"resourceName": "customers/7778889999", "id": "7778889999"}, "campaign": {"resourceName": "customers/7778889999/campaigns/111", "id": "111"}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "1520", "clicks": "88", "costMicros": "43210000", "conversions": 3.5, "conversionsValue": 210.75}},
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "segments": {"date": "2026-09-02"}, "metrics": {"impressions": "990", "clicks": "41", "costMicros": "20000000", "conversions": 0, "conversionsValue": 0}}
+  ], "fieldMask": "customer.id,campaign.id,segments.date,metrics.impressions", "requestId": "r1"}
+]

@@ -1,0 +1,13 @@
+{
+  "data": [
+    {
+      "id": "act_1003",
+      "account_id": "1003",
+      "name": "Acme IN",
+      "currency": "INR",
+      "timezone_name": "Asia/Kolkata",
+      "account_status": 2
+    }
+  ],
+  "paging": {"cursors": {"before": "QVFIUmN", "after": "QVFIUmQ"}}
+}

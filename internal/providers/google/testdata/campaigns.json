@@ -1,0 +1,19 @@
+[
+  {
+    "results": [
+      {
+        "campaign": {"resourceName": "customers/7778889999/campaigns/111", "status": "ENABLED", "servingStatus": "SERVING", "advertisingChannelType": "SEARCH", "biddingStrategyType": "MAXIMIZE_CONVERSIONS", "name": "Brand Search", "id": "111", "campaignBudget": "customers/7778889999/campaignBudgets/901"},
+        "campaignBudget": {"resourceName": "customers/7778889999/campaignBudgets/901", "id": "901", "amountMicros": "25000000", "period": "DAILY", "explicitlyShared": false, "deliveryMethod": "STANDARD"}
+      },
+      {
+        "campaign": {"resourceName": "customers/7778889999/campaigns/222", "status": "PAUSED", "advertisingChannelType": "PERFORMANCE_MAX", "name": "PMax", "id": "222", "campaignBudget": "customers/7778889999/campaignBudgets/902"},
+        "campaignBudget": {"resourceName": "customers/7778889999/campaignBudgets/902", "id": "902", "amountMicros": "100000000", "totalAmountMicros": "3000000000", "period": "CUSTOM_PERIOD", "explicitlyShared": false}
+      },
+      {
+        "campaign": {"resourceName": "customers/7778889999/campaigns/333", "status": "REMOVED", "advertisingChannelType": "DISPLAY", "name": "Old Display", "id": "333"}
+      }
+    ],
+    "fieldMask": "campaign.id,campaign.name",
+    "requestId": "req-c"
+  }
+]

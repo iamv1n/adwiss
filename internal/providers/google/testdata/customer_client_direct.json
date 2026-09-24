@@ -1,0 +1,9 @@
+[
+  {
+    "results": [
+      {"customerClient": {"resourceName": "customers/4445556666/customerClients/4445556666", "level": "0", "manager": false, "descriptiveName": "Direct Co", "currencyCode": "INR", "timeZone": "Asia/Kolkata", "id": "4445556666", "status": "ENABLED"}}
+    ],
+    "fieldMask": "customerClient.id",
+    "requestId": "req-direct"
+  }
+]

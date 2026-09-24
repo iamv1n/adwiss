@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"id": "238600000001", "account_id": "1001", "campaign_id": "2385000000", "adset_id": "238500000001", "name": "Video A", "status": "ACTIVE", "effective_status": "ACTIVE", "creative": {"id": "990001"}},
+    {"id": "238600000002", "account_id": "1001", "campaign_id": "2385000000", "adset_id": "238500000001", "name": "Image B", "status": "PAUSED", "effective_status": "PAUSED", "creative": {"id": "990002"}}
+  ],
+  "paging": {"cursors": {"before": "a", "after": "b"}}
+}

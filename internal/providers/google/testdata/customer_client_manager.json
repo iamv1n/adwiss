@@ -1,0 +1,12 @@
+[
+  {
+    "results": [
+      {"customerClient": {"resourceName": "customers/1112223333/customerClients/1112223333", "clientCustomer": "customers/1112223333", "level": "0", "manager": true, "descriptiveName": "Agency MCC", "currencyCode": "USD", "timeZone": "America/New_York", "id": "1112223333", "status": "ENABLED"}},
+      {"customerClient": {"resourceName": "customers/1112223333/customerClients/7778889999", "clientCustomer": "customers/7778889999", "level": "1", "manager": false, "descriptiveName": "Client A", "currencyCode": "EUR", "timeZone": "Europe/Berlin", "id": "7778889999", "status": "ENABLED"}},
+      {"customerClient": {"resourceName": "customers/1112223333/customerClients/4445556666", "clientCustomer": "customers/4445556666", "level": "1", "manager": false, "descriptiveName": "Direct Co", "currencyCode": "INR", "timeZone": "Asia/Kolkata", "id": "4445556666", "status": "ENABLED"}},
+      {"customerClient": {"resourceName": "customers/1112223333/customerClients/1231231234", "clientCustomer": "customers/1231231234", "level": "2", "manager": false, "descriptiveName": "Old Client", "currencyCode": "JPY", "timeZone": "Asia/Tokyo", "id": "1231231234", "status": "CANCELED"}}
+    ],
+    "fieldMask": "customerClient.id,customerClient.descriptiveName,customerClient.currencyCode,customerClient.timeZone,customerClient.manager,customerClient.status,customerClient.level,customerClient.testAccount,customerClient.clientCustomer",
+    "requestId": "req-mcc"
+  }
+]

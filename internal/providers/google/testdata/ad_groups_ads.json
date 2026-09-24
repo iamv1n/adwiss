@@ -1,0 +1,8 @@
+[
+  {"results": [
+    {"campaign": {"resourceName": "customers/7778889999/campaigns/111", "id": "111"}, "adGroup": {"resourceName": "customers/7778889999/adGroups/5001", "status": "ENABLED", "type": "SEARCH_STANDARD", "name": "Brand Exact", "id": "5001"}}
+  ]},
+  {"results": [
+    {"campaign": {"resourceName": "customers/7778889999/campaigns/111", "id": "111"}, "adGroup": {"resourceName": "customers/7778889999/adGroups/5002", "status": "PAUSED", "name": "Brand Broad", "id": "5002"}}
+  ]}
+]

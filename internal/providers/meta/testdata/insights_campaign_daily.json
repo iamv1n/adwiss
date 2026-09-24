@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "account_id": "1001",
+      "account_currency": "USD",
+      "campaign_id": "2385000000",
+      "campaign_name": "US Prospecting",
+      "date_start": "2026-09-01",
+      "date_stop": "2026-09-01",
+      "impressions": "12045",
+      "clicks": "310",
+      "inline_link_clicks": "250",
+      "spend": "123.45",
+      "reach": "9800",
+      "actions": [
+        {"action_type": "link_click", "value": "250"},
+        {"action_type": "purchase", "value": "7"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "7"},
+        {"action_type": "lead", "value": "3"}
+      ],
+      "action_values": [
+        {"action_type": "purchase", "value": "456.7"},
+        {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "456.7"}
+      ]
+    },
+    {
+      "account_id": "1001",
+      "account_currency": "USD",
+      "campaign_id": "2385000000",
+      "campaign_name": "US Prospecting",
+      "date_start": "2026-09-02",
+      "date_stop": "2026-09-02",
+      "impressions": "0",
+      "clicks": "0",
+      "spend": "0",
+      "reach": "0"
+    }
+  ],
+  "paging": {"cursors": {"before": "MAZDZD", "after": "MQZDZD"}}
+}

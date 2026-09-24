@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"account_id": "1001", "campaign_id": "2385000000", "date_start": "2026-09-01", "date_stop": "2026-09-01", "publisher_platform": "facebook", "platform_position": "feed", "impressions": "700", "clicks": "20", "spend": "7.00", "reach": "600"},
+    {"account_id": "1001", "campaign_id": "2385000000", "date_start": "2026-09-01", "date_stop": "2026-09-01", "publisher_platform": "instagram", "platform_position": "instagram_stories", "impressions": "300", "clicks": "5", "spend": "3.00", "reach": "280"}
+  ],
+  "paging": {"cursors": {"before": "a", "after": "b"}}
+}

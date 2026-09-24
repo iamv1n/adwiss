@@ -1,0 +1,13 @@
+{
+  "results": [{}],
+  "partialFailureError": {
+    "code": 3,
+    "message": "Multiple errors in 'details'. First error: The field's value is invalid.",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.ads.googleads.v25.errors.GoogleAdsFailure",
+        "errors": [{"errorCode": {"campaignBudgetError": "NON_MULTIPLE_OF_MINIMUM_CURRENCY_UNIT"}, "message": "The budget amount must be a multiple of the minimum currency unit."}]
+      }
+    ]
+  }
+}

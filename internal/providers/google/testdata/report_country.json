@@ -1,0 +1,7 @@
+[
+  {"results": [
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "userLocationView": {"resourceName": "customers/7778889999/userLocationViews/2276~true", "countryCriterionId": "2276", "targetingLocation": true}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "100", "clicks": "5", "costMicros": "3000000"}},
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "userLocationView": {"resourceName": "customers/7778889999/userLocationViews/2276~false", "countryCriterionId": "2276", "targetingLocation": false}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "20", "clicks": "1", "costMicros": "500000"}},
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "userLocationView": {"countryCriterionId": "2840", "targetingLocation": false}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "7", "clicks": "0", "costMicros": "10000"}}
+  ]}
+]

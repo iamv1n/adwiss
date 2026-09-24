@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "account_id": "1001",
+      "campaign_id": "2385000000",
+      "date_start": "2026-09-01",
+      "date_stop": "2026-09-01",
+      "hourly_stats_aggregated_by_advertiser_time_zone": "00:00:00 - 00:59:59",
+      "impressions": "400",
+      "clicks": "9",
+      "spend": "4.1",
+      "actions": [{"action_type": "purchase", "value": "1"}],
+      "action_values": [{"action_type": "purchase", "value": "30.00"}]
+    },
+    {
+      "account_id": "1001",
+      "campaign_id": "2385000000",
+      "date_start": "2026-09-01",
+      "date_stop": "2026-09-01",
+      "hourly_stats_aggregated_by_advertiser_time_zone": "13:00:00 - 13:59:59",
+      "impressions": "900",
+      "clicks": "21",
+      "spend": "11.999999"
+    }
+  ],
+  "paging": {"cursors": {"before": "a", "after": "b"}}
+}

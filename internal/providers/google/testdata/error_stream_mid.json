@@ -1,0 +1,4 @@
+[
+  {"results": [{"campaign": {"id": "111"}}]},
+  {"error": {"code": 500, "message": "Internal error encountered.", "status": "INTERNAL", "details": [{"@type": "type.googleapis.com/google.ads.googleads.v25.errors.GoogleAdsFailure", "errors": [{"errorCode": {"internalError": "INTERNAL_ERROR"}, "message": "An internal error has occurred."}], "requestId": "s-req"}]}}
+]

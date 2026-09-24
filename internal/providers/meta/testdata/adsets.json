@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"id": "238500000001", "account_id": "1001", "campaign_id": "2385000000", "name": "US 25-44", "status": "ACTIVE", "effective_status": "CAMPAIGN_PAUSED", "daily_budget": "2550", "optimization_goal": "OFFSITE_CONVERSIONS"},
+    {"id": "238500000002", "account_id": "1001", "campaign_id": "2385000000", "name": "US LAL", "status": "DELETED", "effective_status": "DELETED"}
+  ],
+  "paging": {"cursors": {"before": "a", "after": "b"}}
+}

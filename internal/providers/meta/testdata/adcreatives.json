@@ -1,0 +1,8 @@
+{
+  "data": [
+    {"id": "990001", "account_id": "1001", "name": "Video A creative", "object_type": "VIDEO", "video_id": "77001", "thumbnail_url": "https://scontent.example/thumb-a.jpg", "title": "Try it", "body": "Now 20% off"},
+    {"id": "990002", "account_id": "1001", "name": "Image B creative", "object_type": "PHOTO", "image_url": "https://scontent.example/b.jpg"},
+    {"id": "990003", "account_id": "1001", "name": "Link post", "object_type": "SHARE", "thumbnail_url": "https://scontent.example/c.jpg"}
+  ],
+  "paging": {"cursors": {"before": "a", "after": "b"}}
+}

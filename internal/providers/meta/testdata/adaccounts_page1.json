@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "act_1001",
+      "account_id": "1001",
+      "name": "Acme US",
+      "currency": "USD",
+      "timezone_name": "America/Los_Angeles",
+      "timezone_offset_hours_utc": -7,
+      "account_status": 1,
+      "business": {"id": "555", "name": "Acme Inc"}
+    },
+    {
+      "id": "act_1002",
+      "account_id": "1002",
+      "name": "Acme JP",
+      "currency": "JPY",
+      "timezone_name": "Asia/Tokyo",
+      "timezone_offset_hours_utc": 9,
+      "account_status": 101
+    }
+  ],
+  "paging": {
+    "cursors": {"before": "QVFIUmJ", "after": "QVFIUmN"},
+    "next": "https://graph.facebook.com/v26.0/me/adaccounts?fields=id&limit=2&after=QVFIUmN"
+  }
+}

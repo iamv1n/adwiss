@@ -1,0 +1,6 @@
+[
+  {"results": [
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "adGroup": {"id": "5001"}, "adGroupCriterion": {"criterionId": "44", "keyword": {"text": "acme shoes", "matchType": "EXACT"}}, "keywordView": {"resourceName": "customers/7778889999/keywordViews/5001~44"}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "300", "clicks": "30", "costMicros": "9000000", "conversions": 2, "conversionsValue": 80}},
+    {"customer": {"id": "7778889999"}, "campaign": {"id": "111"}, "adGroup": {"id": "5001"}, "adGroupCriterion": {"criterionId": "45", "keyword": {"text": "acme shoes", "matchType": "PHRASE"}}, "segments": {"date": "2026-09-01"}, "metrics": {"impressions": "100", "clicks": "4", "costMicros": "1200000"}}
+  ]}
+]
