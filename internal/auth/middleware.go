@@ -4,19 +4,29 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/iamv1n/adwise/internal/audit"
 	"github.com/iamv1n/adwise/internal/platform/httpx"
 	"github.com/iamv1n/adwise/internal/store"
 )
 
 const SessionCookieName = "adwise_session"
 
+// AdminSessionCookieName holds a platform admin's own session token while
+// they impersonate someone, so ending the impersonation can restore it. It
+// never authenticates a request by itself.
+const AdminSessionCookieName = "adwise_admin_session"
+
 // Principal is the authenticated caller of a request.
 type Principal struct {
 	User      store.User
 	SessionID uuid.UUID
+	ExpiresAt time.Time
+	// ImpersonatorID is the platform admin acting as User, if any.
+	ImpersonatorID *uuid.UUID
 }
 
 type ctxKey struct{}
@@ -40,7 +50,25 @@ func (s *Service) RequireUser(next http.Handler) http.Handler {
 			httpx.WriteError(w, r, err)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, p)))
+		ctx := context.WithValue(r.Context(), ctxKey{}, p)
+		if p.ImpersonatorID != nil {
+			ctx = audit.WithImpersonator(ctx, *p.ImpersonatorID)
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// RequirePlatformAdmin allows platform admins using their own session. Use
+// after RequireUser. Everyone else gets a 404, so the admin API is not
+// discoverable.
+func RequirePlatformAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := FromContext(r.Context())
+		if !p.User.IsPlatformAdmin || p.ImpersonatorID != nil {
+			httpx.WriteError(w, r, httpx.ErrNotFound)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 

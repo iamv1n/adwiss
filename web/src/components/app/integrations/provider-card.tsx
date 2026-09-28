@@ -19,7 +19,9 @@ import {
   type Integration,
   type IntegrationStatus,
   type Provider,
+  type SyncProgress,
 } from "@/lib/api";
+import { isSyncActive, useSyncProgress } from "@/lib/queries";
 import { cn, formatDate, timeAgo } from "@/lib/utils";
 
 export interface ProviderCardActions {
@@ -31,6 +33,7 @@ export interface ProviderCardActions {
 }
 
 interface ProviderCardProps extends ProviderCardActions {
+  orgId: string;
   provider: Provider;
   labels: EntityLabels | undefined;
   integrations: Integration[];
@@ -211,6 +214,7 @@ function AccountsBlock({
 }
 
 function IntegrationSection({
+  orgId,
   provider,
   integration: integ,
   accounts,
@@ -242,6 +246,9 @@ function IntegrationSection({
     : (integ.sync_enabled_count ?? 0);
   const busyConnect = connectState.pending || connectState.redirecting;
   const name = integ.display_name || `${meta.name} connection`;
+  const progress = useSyncProgress(orgId, integ.id, !disconnected).data;
+  const syncActive = isSyncActive(progress?.state);
+  const starting = syncingId === integ.id;
 
   useEffect(() => {
     if (highlighted) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -282,15 +289,15 @@ function IntegrationSection({
                 size="sm"
                 variant="outline"
                 onClick={() => onSyncNow(integ)}
-                disabled={syncEnabledCount === 0 || syncingId === integ.id}
+                disabled={syncEnabledCount === 0 || starting || syncActive}
                 title={syncEnabledCount === 0 ? "Turn on sync for at least one account first" : undefined}
               >
-                {syncingId === integ.id ? (
+                {starting || syncActive ? (
                   <Loader2 className="animate-spin" aria-hidden="true" />
                 ) : (
                   <Zap aria-hidden="true" />
                 )}
-                Sync now
+                {syncActive ? "Syncing…" : "Sync now"}
               </Button>
             )}
             <Button
@@ -317,6 +324,7 @@ function IntegrationSection({
           </div>
         )}
       </div>
+      {progress && progress.state !== "idle" && <SyncProgressBar progress={progress} now={now} />}
       {canManage && notConfigured && !disconnected && (
         <p className="px-5 pt-2 text-xs text-fg-subtle">
           Not configured on this server, so refreshing accounts and reconnecting are unavailable.
@@ -346,5 +354,56 @@ function IntegrationSection({
         />
       )}
     </section>
+  );
+}
+
+function SyncProgressBar({ progress: p, now }: { progress: SyncProgress; now: number }) {
+  const active = isSyncActive(p.state);
+  const failed = p.entities_failed + p.metrics_failed;
+  // A finished sync stays visible for a few minutes, then gets out of the way.
+  if (!active && p.updated_at && now - new Date(p.updated_at).getTime() > 5 * 60_000) return null;
+
+  const label =
+    p.state === "queued"
+      ? "Waiting to start…"
+      : p.state === "running"
+        ? p.entities_done + p.entities_failed < p.accounts_total
+          ? `Syncing campaigns · ${p.entities_done + p.entities_failed} of ${p.accounts_total} accounts`
+          : `Syncing performance data · ${p.metrics_done + p.metrics_failed} of ${p.metrics_total} reports`
+        : p.state === "done"
+          ? failed > 0
+            ? `Synced with ${failed} ${failed === 1 ? "error" : "errors"}`
+            : "Sync complete"
+          : "Sync failed";
+
+  return (
+    <div className="px-5 pt-3" aria-live="polite">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className={cn("text-fg-muted", p.state === "failed" && "text-danger-fg")}>{label}</span>
+        {p.state !== "failed" && <span className="font-mono text-fg-subtle tabular-nums">{p.percent}%</span>}
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Sync progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={p.percent}
+        className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg-subtle"
+      >
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] duration-500",
+            p.state === "failed" ? "bg-danger" : p.state === "done" && failed === 0 ? "bg-success" : "bg-primary",
+            p.state === "queued" && "w-1/4 animate-pulse",
+          )}
+          style={p.state === "queued" ? undefined : { width: `${Math.max(p.percent, 3)}%` }}
+        />
+      </div>
+      {p.error && (active || failed > 0 || p.state === "failed") && (
+        <p className="mt-1 truncate text-xs text-danger-fg" title={p.error}>
+          {p.error}
+        </p>
+      )}
+    </div>
   );
 }

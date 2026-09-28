@@ -1,5 +1,5 @@
 export const BRANDS = [
-  { id: "cobalt", label: "Cobalt" },
+  { id: "adwise", label: "Adwise" },
   { id: "violet", label: "Violet" },
   { id: "emerald", label: "Emerald" },
   { id: "amber", label: "Amber" },
@@ -7,7 +7,7 @@ export const BRANDS = [
 
 export type BrandId = (typeof BRANDS)[number]["id"];
 
-export const DEFAULT_BRAND: BrandId = "cobalt";
+export const DEFAULT_BRAND: BrandId = "adwise";
 export const BRAND_STORAGE_KEY = "adwise-brand";
 
 export function isBrand(value: unknown): value is BrandId {

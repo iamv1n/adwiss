@@ -1,24 +1,30 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   api,
   isApiError,
   type AdAccount,
+  type LoginResult,
   type MeResponse,
   type Organization,
   type Provider,
   type ProviderLabels,
   type Role,
+  type SyncProgressState,
 } from "@/lib/api";
 import { useActiveOrgStore } from "@/lib/stores/org";
 
 export const queryKeys = {
   me: ["auth", "me"] as const,
+  security: ["auth", "security"] as const,
   members: (orgId: string) => ["orgs", orgId, "members"] as const,
   invitations: (orgId: string) => ["orgs", orgId, "invitations"] as const,
   integrations: (orgId: string) => ["orgs", orgId, "integrations"] as const,
   accounts: (orgId: string) => ["orgs", orgId, "accounts"] as const,
+  syncProgress: (orgId: string, integrationId: string) =>
+    ["orgs", orgId, "integrations", integrationId, "sync-progress"] as const,
 };
 
 /**
@@ -47,13 +53,65 @@ export function useActiveOrg(): Organization | null {
   return orgs.find((o) => o.id === activeOrgId) ?? orgs[0] ?? null;
 }
 
-export function useLogin() {
+export const useLogin = () => useLoginStep(api.auth.login);
+
+/** Any sign-in step that may finish the login (returns a LoginResult). */
+function useLoginStep<I>(fn: (input: I) => Promise<LoginResult>) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: api.auth.login,
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.me }),
+    mutationFn: fn,
+    onSuccess: (res) => {
+      if (res.status === "ok") return qc.invalidateQueries({ queryKey: queryKeys.me });
+    },
   });
 }
+
+export const useLoginCodeVerify = () => useLoginStep(api.auth.loginCodeVerify);
+export const useChallengeVerify = () => useLoginStep(api.auth.challengeVerify);
+export const useLoginCodeStart = () => useMutation({ mutationFn: api.auth.loginCodeStart });
+export const useChallengeEmail = () => useMutation({ mutationFn: api.auth.challengeEmail });
+export const useForgotPassword = () => useMutation({ mutationFn: api.auth.forgotPassword });
+export const useResetPassword = () => useMutation({ mutationFn: api.auth.resetPassword });
+export const useResendVerifyEmail = () => useMutation({ mutationFn: api.auth.resendEmail });
+
+export function useVerifyEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: api.auth.verifyEmail,
+    onSuccess: async () => {
+      qc.setQueryData<MeResponse | null>(queryKeys.me, (old) => (old ? { ...old, email_verified: true } : old));
+      await qc.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+export function useSecurity() {
+  return useQuery({ queryKey: queryKeys.security, queryFn: api.auth.security });
+}
+
+/** Security-settings mutation that refreshes the overview (and `me`) when done. */
+function useSecurityMutation<I, O>(fn: (input: I) => Promise<O>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.security });
+      qc.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+export const useChangePassword = () => useSecurityMutation(api.auth.changePassword);
+export const useTotpSetup = () => useMutation({ mutationFn: api.auth.totpSetup });
+export const useTotpEnable = () => useSecurityMutation(api.auth.totpEnable);
+export const useTotpDisable = () => useSecurityMutation(api.auth.totpDisable);
+export const useSetEmail2fa = () => useSecurityMutation(api.auth.setEmail2fa);
+export const useRegenerateRecoveryCodes = () => useSecurityMutation(api.auth.regenerateRecoveryCodes);
+export const useAddPhone = () => useSecurityMutation(api.auth.addPhone);
+export const useVerifyPhone = () => useSecurityMutation(api.auth.verifyPhone);
+export const useRemovePhone = () => useSecurityMutation(api.auth.removePhone);
+export const useRemoveDevice = () => useSecurityMutation(api.auth.removeDevice);
+export const useRevokeOtherSessions = () => useSecurityMutation(api.auth.revokeOtherSessions);
 
 export function useSignup() {
   const qc = useQueryClient();
@@ -205,7 +263,8 @@ export function useSyncIntegration(orgId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (integrationId: string) => api.integrations.sync(orgId, integrationId),
-    onSettled: () => {
+    onSettled: (_data, _err, integrationId) => {
+      qc.invalidateQueries({ queryKey: queryKeys.syncProgress(orgId, integrationId) });
       qc.invalidateQueries({ queryKey: queryKeys.accounts(orgId) });
       qc.invalidateQueries({ queryKey: queryKeys.integrations(orgId) });
     },
@@ -241,4 +300,37 @@ export function useSetAccountSync(orgId: string) {
     },
     onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
+}
+
+const ACTIVE_SYNC: SyncProgressState[] = ["queued", "running"];
+
+/**
+ * Live progress of an integration's sync. Polls every 2 s while a sync is
+ * queued or running (and every 30 s otherwise, to pick up scheduled syncs).
+ * When a sync finishes, accounts and integrations are refetched so their
+ * "last synced" times update.
+ */
+export function useSyncProgress(orgId: string, integrationId: string, enabled = true) {
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: queryKeys.syncProgress(orgId, integrationId),
+    queryFn: async () => (await api.integrations.syncProgress(orgId, integrationId)).progress,
+    enabled: enabled && !!orgId,
+    refetchInterval: (query) => (query.state.data && ACTIVE_SYNC.includes(query.state.data.state) ? 2000 : 30000),
+  });
+  const state = q.data?.state;
+  const prev = useRef(state);
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = state;
+    if (was && ACTIVE_SYNC.includes(was) && state && !ACTIVE_SYNC.includes(state)) {
+      qc.invalidateQueries({ queryKey: queryKeys.accounts(orgId) });
+      qc.invalidateQueries({ queryKey: queryKeys.integrations(orgId) });
+    }
+  }, [state, orgId, qc]);
+  return q;
+}
+
+export function isSyncActive(state: SyncProgressState | undefined) {
+  return !!state && ACTIVE_SYNC.includes(state);
 }

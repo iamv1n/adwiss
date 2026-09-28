@@ -9,8 +9,12 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/app/logo";
 import { ALL_NAV_ITEMS, isActive } from "@/components/app/shell/nav";
+import { AlertsBell } from "@/components/app/shell/alerts-bell";
+import { ImpersonationBanner } from "@/components/app/shell/impersonation-banner";
 import { OrgSwitcher } from "@/components/app/shell/org-switcher";
 import { SidebarNav } from "@/components/app/shell/sidebar-nav";
+import { SyncIndicator } from "@/components/app/shell/sync-indicator";
+import { AnalystButton } from "@/components/app/ai/analyst-panel";
 import { UserMenu } from "@/components/app/shell/user-menu";
 import { useMe } from "@/lib/queries";
 import { useUiStore } from "@/lib/stores/ui";
@@ -59,94 +63,105 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const orgCount = me.data?.organizations.length ?? 0;
 
+  // Unverified accounts confirm their email first (not while a platform admin is impersonating).
+  const needsVerify = me.data?.email_verified === false && !me.data.impersonator;
+
   useEffect(() => {
     if (me.data === null) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-    else if (me.data && orgCount === 0) router.replace("/onboarding");
-  }, [me.data, orgCount, pathname, router]);
+    else if (needsVerify) router.replace(`/verify-email?next=${encodeURIComponent(pathname)}`);
+    // Platform admins don't need an organization of their own.
+    else if (me.data && orgCount === 0) router.replace(me.data.user.is_platform_admin ? "/admin" : "/onboarding");
+  }, [me.data, needsVerify, orgCount, pathname, router]);
 
   if (me.isError) return <ShellError message={me.error.message} onRetry={() => me.refetch()} />;
-  if (!me.data || orgCount === 0) return <ShellSkeleton />;
+  if (!me.data || orgCount === 0 || needsVerify) return <ShellSkeleton />;
 
   const current = ALL_NAV_ITEMS.find((i) => isActive(pathname, i.href));
 
   return (
-    <div className="flex min-h-dvh flex-1">
-      <a
-        href="#main"
-        className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-fg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-      >
-        Skip to content
-      </a>
+    <div className="flex min-h-dvh flex-1 flex-col">
+      <ImpersonationBanner />
+      <div className="flex min-h-0 flex-1">
+        <a
+          href="#main"
+          className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-fg focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          Skip to content
+        </a>
 
-      {/* Desktop sidebar */}
-      <aside
-        aria-label="Sidebar"
-        className={cn(
-          "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-bg-subtle transition-[width] duration-200 md:flex",
-          collapsed ? "w-16" : "w-60",
-        )}
-      >
-        <div className={cn("flex h-14 items-center border-b border-border", collapsed ? "justify-center" : "px-4")}>
-          <Link
-            href="/app/dashboard"
-            aria-label="Adwise dashboard"
-            className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            <Logo collapsed={collapsed} />
-          </Link>
-        </div>
-        <div className="p-2">
-          <OrgSwitcher collapsed={collapsed} />
-        </div>
-        <div className="flex-1 overflow-y-auto px-2 py-3">
-          <SidebarNav collapsed={collapsed} />
-        </div>
-        <div className={cn("border-t border-border p-2", collapsed && "flex justify-center")}>
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "sm"}
-            onClick={toggleSidebar}
-            className={cn("text-fg-muted", !collapsed && "w-full justify-start")}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-expanded={!collapsed}
-          >
-            {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
-            {!collapsed && "Collapse"}
-          </Button>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-bg/70 sm:px-6">
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="-ml-2 md:hidden" aria-label="Open navigation">
-                <Menu aria-hidden="true" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 gap-0 bg-bg-subtle p-0">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
-              <div className="flex h-14 items-center border-b border-border px-4">
-                <Logo />
-              </div>
-              <div className="p-2">
-                <OrgSwitcher />
-              </div>
-              <div className="overflow-y-auto px-2 py-3">
-                <SidebarNav onNavigate={() => setMobileOpen(false)} />
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <p className="min-w-0 truncate text-sm font-medium text-fg">{current?.label ?? "Adwise"}</p>
-          <div className="ml-auto flex items-center gap-1.5">
-            <UserMenu />
+        {/* Desktop sidebar */}
+        <aside
+          aria-label="Sidebar"
+          className={cn(
+            "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-border bg-bg-subtle transition-[width] duration-200 md:flex",
+            collapsed ? "w-16" : "w-60",
+          )}
+        >
+          <div className={cn("flex h-14 items-center border-b border-border", collapsed ? "justify-center" : "px-4")}>
+            <Link
+              href="/app/dashboard"
+              aria-label="Adwise dashboard"
+              className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <Logo collapsed={collapsed} />
+            </Link>
           </div>
-        </header>
+          <div className="p-2">
+            <OrgSwitcher collapsed={collapsed} />
+          </div>
+          <div className="flex-1 overflow-y-auto px-2 py-3">
+            <SidebarNav collapsed={collapsed} />
+          </div>
+          <div className={cn("border-t border-border p-2", collapsed && "flex justify-center")}>
+            <Button
+              variant="ghost"
+              size={collapsed ? "icon" : "sm"}
+              onClick={toggleSidebar}
+              className={cn("text-fg-muted", !collapsed && "w-full justify-start")}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+            >
+              {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+              {!collapsed && "Collapse"}
+            </Button>
+          </div>
+        </aside>
 
-        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10">
-          {children}
-        </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-bg/70 sm:px-6">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="-ml-2 md:hidden" aria-label="Open navigation">
+                  <Menu aria-hidden="true" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 gap-0 bg-bg-subtle p-0">
+                <SheetTitle className="sr-only">Navigation</SheetTitle>
+                <div className="flex h-14 items-center border-b border-border px-4">
+                  <Logo />
+                </div>
+                <div className="p-2">
+                  <OrgSwitcher />
+                </div>
+                <div className="overflow-y-auto px-2 py-3">
+                  <SidebarNav onNavigate={() => setMobileOpen(false)} />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <p className="min-w-0 truncate text-sm font-medium text-fg">{current?.label ?? "Adwise"}</p>
+            <div className="ml-auto flex items-center gap-1.5">
+              <AnalystButton />
+              <SyncIndicator />
+              <AlertsBell />
+              <UserMenu />
+            </div>
+          </header>
+
+          <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 outline-none sm:px-6 lg:px-8 lg:py-10">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

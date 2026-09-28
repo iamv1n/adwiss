@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iamv1n/adwise/internal/ads"
+	"github.com/iamv1n/adwise/internal/reports"
 )
 
 func TestDecimalToMicros(t *testing.T) {
@@ -113,4 +114,16 @@ func TestCatalog(t *testing.T) {
 	require.Equal(t, []ads.Dimension{ads.DimCountry}, Breakdowns(def))
 	_, ok = CatalogReport("nope")
 	require.False(t, ok)
+}
+
+// Sync fetches catalog reports and the metrics writer only stores registered
+// ones, so the two lists must not drift apart.
+func TestCatalogReportsAreRegistered(t *testing.T) {
+	for _, d := range Catalog {
+		reg, ok := reports.Get(d.Name)
+		require.True(t, ok, "catalog report %q is not in internal/reports", d.Name)
+		require.Equal(t, reg.Level, d.Level, d.Name)
+		require.Equal(t, reg.Grain, d.Grain, d.Name)
+		require.Equal(t, reg.Dimensions, d.Dimensions, d.Name)
+	}
 }

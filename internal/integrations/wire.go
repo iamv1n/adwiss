@@ -40,6 +40,7 @@ func NewFromConfig(cfg config.Config, db *database.DB, rdb *redis.Client, st ads
 		DB: db, Redis: rdb, Keys: MustKeyring(cfg.Integrations), Store: st,
 		Apps:       NewApps(cfg.Integrations, nil, slog.Default()),
 		WebBaseURL: cfg.WebBaseURL, Logger: slog.Default(),
+		MetaAppSecret: cfg.Integrations.MetaAppSecret, MetaWebhookVerifyToken: cfg.Integrations.MetaWebhookVerifyToken,
 	})
 	if enq != nil {
 		svc.enqueuer = enq

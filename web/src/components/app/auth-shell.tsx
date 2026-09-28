@@ -17,7 +17,7 @@ export function AuthShell({ children, illustration, asideTitle, asideBody, aside
       <div className="flex flex-col px-4 py-6 sm:px-10">
         <header className="flex items-center justify-between">
           <Link
-            href="/"
+            href={process.env.NEXT_PUBLIC_SITE_URL ?? "/"}
             className="rounded-md focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
             aria-label="Adwise home"
           >

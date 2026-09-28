@@ -24,9 +24,17 @@ import (
 // Facebook Login does not document PKCE for the server-side code flow, so
 // the integrations service relies on the state parameter plus the app secret.
 
-// Scopes needed to read and manage ads. ads_management and business_management
-// require App Review (Advanced Access) before non-test users can grant them.
-var Scopes = []string{"ads_read", "ads_management", "business_management"}
+// Scopes needed to read and manage ads and to read lead-form leads. All but
+// ads_read require App Review (Advanced Access) before non-test users can grant
+// them. leads_retrieval and the pages_* scopes are for Lead Ads; connections
+// made before they were added must reconnect to import leads.
+// pages_manage_metadata lets Adwise subscribe a Page to the leadgen webhook
+// (POST /{page-id}/subscribed_apps) for instant leads.
+var Scopes = []string{
+	"ads_read", "ads_management", "business_management",
+	"leads_retrieval", "pages_show_list", "pages_read_engagement", "pages_manage_ads",
+	"pages_manage_metadata",
+}
 
 // Endpoint returns the OAuth endpoints for a Graph API version.
 func Endpoint(apiVersion string) oauth2.Endpoint {

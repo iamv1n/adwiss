@@ -249,6 +249,7 @@ function IntegrationsForOrg({
         <div className="grid gap-6">
           {PROVIDER_IDS.map((p) => (
             <ProviderCard
+              orgId={orgId}
               key={p}
               provider={p}
               labels={accounts.data?.labels?.[p]}

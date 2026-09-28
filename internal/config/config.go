@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+
+	"github.com/iamv1n/adwise/internal/platform/mailer"
+	"github.com/iamv1n/adwise/internal/platform/sms"
 )
 
 type Config struct {
@@ -24,7 +27,10 @@ type Config struct {
 	InvitationTTL time.Duration
 	CookieSecure  bool
 
-	Integrations Integrations // provider OAuth + token encryption (integrations.go)
+	Integrations Integrations  // provider OAuth + token encryption (integrations.go)
+	Mail         mailer.Config // outgoing email (mail.go)
+	SMS          sms.Config    // outgoing SMS (sms.go)
+	AI           AI            // in-app analyst (ai.go)
 }
 
 func (c Config) IsDevelopment() bool { return c.Env == "development" }
@@ -62,6 +68,13 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 	if cfg.Integrations, err = loadIntegrations(cfg); err != nil {
+		return Config{}, err
+	}
+	if cfg.Mail, err = loadMail(); err != nil {
+		return Config{}, err
+	}
+	cfg.SMS = loadSMS()
+	if cfg.AI, err = loadAI(); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil

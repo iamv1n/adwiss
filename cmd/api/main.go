@@ -13,20 +13,33 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/iamv1n/adwise/internal/admin"
+	"github.com/iamv1n/adwise/internal/ai"
+	"github.com/iamv1n/adwise/internal/alerts"
 	"github.com/iamv1n/adwise/internal/analytics"
 	"github.com/iamv1n/adwise/internal/auth"
+	"github.com/iamv1n/adwise/internal/automation"
+	"github.com/iamv1n/adwise/internal/changelog"
 	"github.com/iamv1n/adwise/internal/config"
 	"github.com/iamv1n/adwise/internal/entities"
 	"github.com/iamv1n/adwise/internal/integrations"
+	"github.com/iamv1n/adwise/internal/leads"
+	"github.com/iamv1n/adwise/internal/learn"
+	"github.com/iamv1n/adwise/internal/manage"
 	"github.com/iamv1n/adwise/internal/metrics"
 	"github.com/iamv1n/adwise/internal/organizations"
 	"github.com/iamv1n/adwise/internal/platform/database"
 	"github.com/iamv1n/adwise/internal/platform/httpx"
 	"github.com/iamv1n/adwise/internal/platform/logging"
+	"github.com/iamv1n/adwise/internal/platform/mailer"
 	"github.com/iamv1n/adwise/internal/platform/ratelimit"
 	"github.com/iamv1n/adwise/internal/platform/redisx"
+	"github.com/iamv1n/adwise/internal/platform/sms"
+	"github.com/iamv1n/adwise/internal/queue"
+	"github.com/iamv1n/adwise/internal/recommendations"
 )
 
 func main() {
@@ -91,6 +104,18 @@ func run() error {
 
 func newRouter(cfg config.Config, db *database.DB, rdb *redis.Client) http.Handler {
 	authSvc := auth.NewService(db, cfg.SessionTTL)
+	// Account-security emails (codes, alerts) are queued for the worker.
+	var authMail func(context.Context, mailer.Message) error
+	if opt, err := queue.RedisOpt(cfg.RedisURL); err == nil {
+		authEnq := asynq.NewClient(opt)
+		authMail = func(ctx context.Context, m mailer.Message) error { return mailer.Enqueue(ctx, authEnq, m) }
+	}
+	authSvc.ConfigureSecurity(auth.SecurityConfig{
+		Keys:       integrations.MustKeyring(cfg.Integrations),
+		SendMail:   authMail,
+		SMS:        sms.New(cfg.SMS, slog.Default()),
+		WebBaseURL: cfg.WebBaseURL,
+	})
 	orgSvc := organizations.NewService(db, cfg.InvitationTTL)
 	orgHandlers := organizations.NewHandlers(orgSvc, db, cfg.WebBaseURL)
 	credentialLimit := ratelimit.New(rdb, "auth_credentials", 20, 15*time.Minute)
@@ -124,17 +149,39 @@ func newRouter(cfg config.Config, db *database.DB, rdb *redis.Client) http.Handl
 	// Provider OAuth, account discovery and sync requests (internal/integrations).
 	// The asynq client lives for the life of the process.
 	integrationSvc, _ := integrations.NewFromConfig(cfg, db, rdb, entities.NewStore(db))
+	// Queues alert emails from the admin "run now" endpoint (sent by the worker).
+	var alertsEnqueuer mailer.Enqueuer
+	if opt, err := queue.RedisOpt(cfg.RedisURL); err == nil {
+		alertsEnqueuer = asynq.NewClient(opt)
+	}
 	integrationHandlers := integrations.NewHandlers(integrationSvc)
+
+	// Platform admin console. The inspector reads the worker's queues in Redis.
+	var adminHandlers *admin.Handlers
+	if opt, err := queue.RedisOpt(cfg.RedisURL); err == nil {
+		adminHandlers = admin.NewHandlers(cfg, db, rdb, authSvc, authHandlers, integrationSvc, asynq.NewInspector(opt))
+	} else {
+		slog.Error("admin console disabled, invalid REDIS_URL", "err", err)
+	}
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Mount("/auth", authHandlers.Routes())
 		// OAuth callback: a provider browser redirect; the one-time state
 		// authenticates it, so it sits outside RequireUser.
 		integrationHandlers.RegisterPublic(r)
+		// Product updates: published entries are public (marketing site).
+		changelogHandlers := changelog.NewHandlers(db.Pool)
+		r.Mount("/changelog", changelogHandlers.PublicRoutes())
 		r.Group(func(r chi.Router) {
 			r.Use(authSvc.RequireUser)
+			changelogHandlers.RegisterMe(r)
+			r.With(auth.RequirePlatformAdmin).Mount("/admin/changelog", changelogHandlers.AdminRoutes())
 			r.Mount("/orgs", orgHandlers.OrgRoutes())
 			r.Mount("/invitations", orgHandlers.InvitationRoutes())
+			r.Mount("/learn", learn.NewHandlers(db.Pool).Routes())
+			if adminHandlers != nil {
+				r.With(auth.RequirePlatformAdmin).Mount("/admin", adminHandlers.Routes())
+			}
 
 			// Canonical entities and analytics, registered as explicit
 			// /orgs/{orgID}/... routes beside the /orgs mount (chi prefers them
@@ -142,9 +189,43 @@ func newRouter(cfg config.Config, db *database.DB, rdb *redis.Client) http.Handl
 			metricsRepo := metrics.NewPostgresRepository(db.Pool)
 			r.Group(func(r chi.Router) {
 				r.Use(organizations.RequireMember(db))
-				entities.NewHandlers(entities.NewService(db, metricsRepo)).Register(r)
+				entitySvc := entities.NewService(db, metricsRepo)
+				entities.NewHandlers(entitySvc).Register(r)
 				analytics.NewHandlers(analytics.NewService(db, metricsRepo)).Register(r)
 				integrationHandlers.Register(r)
+				leads.NewHandlers(leads.NewService(db)).Register(r)
+
+				// Campaign management (writes to the providers): admin or owner.
+				manageSvc := manage.NewService(db, integrationSvc, entitySvc, entities.NewStore(db))
+				r.Group(func(r chi.Router) {
+					r.Use(organizations.RequireRole(organizations.RoleAdmin))
+					manage.NewHandlers(manageSvc).Register(r)
+				})
+
+				// Dayparting schedules, automation rules and the actions log
+				// (reads for members, writes for admins; see the package).
+				automationSvc := automation.NewService(db, automation.ManageMutator{Svc: manageSvc})
+				automation.NewHandlers(automationSvc).Register(r)
+
+				// Alerts: in-app list/read state and each user's email preferences.
+				// Detection runs in the worker; emails are queued, never sent inline.
+				alerts.NewHandlers(alerts.NewService(db, alertsEnqueuer, cfg.WebBaseURL)).Register(r)
+				// Recommendations inbox, creative fatigue and org targets.
+				recommendationSvc := recommendations.NewService(db, automationSvc)
+				recommendations.NewHandlers(recommendationSvc).Register(r)
+
+				// AI analyst: read-only tools over the services above.
+				var agent *ai.Agent
+				if cfg.AI.Enabled() {
+					agent = ai.NewAgent(cfg.AI.AnthropicAPIKey, cfg.AI.Model, ai.NewTools(ai.Services{
+						Analytics:       analytics.NewService(db, metricsRepo),
+						Automation:      automationSvc,
+						Alerts:          alerts.NewService(db, alertsEnqueuer, cfg.WebBaseURL),
+						Recommendations: recommendationSvc,
+					}), slog.Default())
+				}
+				aiSvc := ai.NewService(db, agent, cfg.AI.Model, cfg.AI.DailyTokens, slog.Default())
+				ai.NewHandlers(aiSvc, ratelimit.New(rdb, "ai_chat", 30, time.Hour)).Register(r)
 			})
 		})
 	})

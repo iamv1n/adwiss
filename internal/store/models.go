@@ -362,21 +362,23 @@ type OrganizationUser struct {
 }
 
 type Session struct {
-	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"user_id"`
-	TokenHash  []byte    `json:"token_hash"`
-	UserAgent  string    `json:"user_agent"`
-	IpAddress  string    `json:"ip_address"`
-	ExpiresAt  time.Time `json:"expires_at"`
-	LastSeenAt time.Time `json:"last_seen_at"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID                 uuid.UUID  `json:"id"`
+	UserID             uuid.UUID  `json:"user_id"`
+	TokenHash          []byte     `json:"token_hash"`
+	UserAgent          string     `json:"user_agent"`
+	IpAddress          string     `json:"ip_address"`
+	ExpiresAt          time.Time  `json:"expires_at"`
+	LastSeenAt         time.Time  `json:"last_seen_at"`
+	CreatedAt          time.Time  `json:"created_at"`
+	ImpersonatorUserID *uuid.UUID `json:"impersonator_user_id"`
 }
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
-	Email        string    `json:"email"`
-	Name         string    `json:"name"`
-	PasswordHash string    `json:"password_hash"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID              uuid.UUID `json:"id"`
+	Email           string    `json:"email"`
+	Name            string    `json:"name"`
+	PasswordHash    string    `json:"password_hash"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	IsPlatformAdmin bool      `json:"is_platform_admin"`
 }

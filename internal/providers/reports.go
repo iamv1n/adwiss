@@ -11,14 +11,18 @@ import (
 // Standard report definitions (plan §20). Adapters translate these by Level,
 // Dimensions and Grain, not by name, and list the names they can serve in
 // Capabilities().Reports.
+//
+// Every entry must also be registered in internal/reports, or the metrics
+// writer rejects its facts. Reports derivable from another one are left out
+// so the same numbers aren't fetched and stored twice: ad group totals are
+// summed from ad_daily, and the publisher platform breakdown reads
+// campaign_placement_daily.
 var Catalog = []ads.ReportDefinition{
 	{Name: "campaign_daily", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign}, Grain: ads.GrainDay},
 	{Name: "campaign_hourly", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign}, Grain: ads.GrainHour},
 	{Name: "campaign_country_daily", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimCountry}, Grain: ads.GrainDay},
 	{Name: "campaign_device_daily", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimDevice}, Grain: ads.GrainDay},
 	{Name: "campaign_placement_daily", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimPublisherPlatform, ads.DimPlacement}, Grain: ads.GrainDay},
-	{Name: "campaign_publisher_platform_daily", Level: ads.EntityCampaign, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimPublisherPlatform}, Grain: ads.GrainDay},
-	{Name: "ad_group_daily", Level: ads.EntityAdGroup, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimAdGroup}, Grain: ads.GrainDay},
 	{Name: "ad_daily", Level: ads.EntityAd, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimAdGroup, ads.DimAd}, Grain: ads.GrainDay},
 	{Name: "keyword_daily", Level: ads.EntityAdGroup, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimAdGroup, ads.DimKeyword}, Grain: ads.GrainDay},
 	{Name: "search_term_daily", Level: ads.EntityAdGroup, Dimensions: []ads.Dimension{ads.DimCampaign, ads.DimAdGroup, ads.DimSearchTerm}, Grain: ads.GrainDay},

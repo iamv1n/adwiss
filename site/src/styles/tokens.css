@@ -1,0 +1,311 @@
+/*
+ * Adwise design tokens.
+ *
+ * Layer 1 — PRIMITIVES: raw OKLCH color scales (brand, neutral, success,
+ *           warning, danger, info). Only this layer contains literal colors.
+ * Layer 2 — SEMANTICS: purpose-named tokens (--color-bg, --color-primary …)
+ *           that reference primitives. Components only ever use these,
+ *           through Tailwind utilities (bg-surface, text-fg-muted, …).
+ *
+ * Themes are selectors that re-map primitives and/or semantics:
+ *   [data-theme="light" | "dark"]      → light / dark mode (semantics)
+ *   [data-brand="violet" | "emerald"]  → alternate brand (brand primitives)
+ *
+ * See src/styles/THEMING.md.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Layer 1 — primitives                                               */
+/* ------------------------------------------------------------------ */
+
+:root {
+  /*
+   * Brand scale. The default brand ("cobalt") is generated from a single
+   * hue + chroma multiplier, so swapping the brand is one edit here or one
+   * [data-brand] block below.
+   */
+  --brand-hue: 262;
+  --brand-chroma: 1;
+}
+
+/*
+ * The scale is (re)declared on every [data-brand] element so a brand can
+ * also be scoped to a subtree (e.g. the brand-picker swatches).
+ */
+:root,
+[data-brand] {
+  --brand-50: oklch(0.975 calc(0.014 * var(--brand-chroma)) var(--brand-hue));
+  --brand-100: oklch(0.945 calc(0.032 * var(--brand-chroma)) var(--brand-hue));
+  --brand-200: oklch(0.885 calc(0.066 * var(--brand-chroma)) var(--brand-hue));
+  --brand-300: oklch(0.805 calc(0.11 * var(--brand-chroma)) var(--brand-hue));
+  --brand-400: oklch(0.71 calc(0.16 * var(--brand-chroma)) var(--brand-hue));
+  --brand-500: oklch(0.625 calc(0.2 * var(--brand-chroma)) var(--brand-hue));
+  --brand-600: oklch(0.545 calc(0.215 * var(--brand-chroma)) var(--brand-hue));
+  --brand-700: oklch(0.475 calc(0.19 * var(--brand-chroma)) var(--brand-hue));
+  --brand-800: oklch(0.405 calc(0.155 * var(--brand-chroma)) var(--brand-hue));
+  --brand-900: oklch(0.335 calc(0.115 * var(--brand-chroma)) var(--brand-hue));
+  --brand-950: oklch(0.255 calc(0.085 * var(--brand-chroma)) var(--brand-hue));
+
+  /* Brand identity color for previews/swatches (same in light and dark). */
+  --color-brand-swatch: var(--brand-500);
+}
+
+:root {
+
+  /* Neutral scale — faintly cool so it sits well next to most brands. */
+  --neutral-hue: 265;
+  --neutral-0: oklch(1 0 0);
+  --neutral-50: oklch(0.985 0.002 var(--neutral-hue));
+  --neutral-100: oklch(0.967 0.003 var(--neutral-hue));
+  --neutral-200: oklch(0.925 0.005 var(--neutral-hue));
+  --neutral-300: oklch(0.87 0.007 var(--neutral-hue));
+  --neutral-400: oklch(0.708 0.01 var(--neutral-hue));
+  --neutral-500: oklch(0.556 0.012 var(--neutral-hue));
+  --neutral-600: oklch(0.446 0.013 var(--neutral-hue));
+  --neutral-700: oklch(0.372 0.013 var(--neutral-hue));
+  --neutral-800: oklch(0.27 0.011 var(--neutral-hue));
+  --neutral-850: oklch(0.225 0.01 var(--neutral-hue));
+  --neutral-900: oklch(0.195 0.009 var(--neutral-hue));
+  --neutral-925: oklch(0.172 0.008 var(--neutral-hue));
+  --neutral-950: oklch(0.145 0.007 var(--neutral-hue));
+  --neutral-1000: oklch(0 0 0);
+
+  /* Status scales (fixed across brands). */
+  --success-50: oklch(0.975 0.025 155);
+  --success-100: oklch(0.945 0.05 155);
+  --success-300: oklch(0.83 0.13 155);
+  --success-400: oklch(0.75 0.16 155);
+  --success-500: oklch(0.66 0.16 155);
+  --success-600: oklch(0.56 0.14 155);
+  --success-700: oklch(0.47 0.115 155);
+  --success-900: oklch(0.3 0.07 155);
+  --success-950: oklch(0.23 0.05 155);
+
+  --warning-50: oklch(0.985 0.03 85);
+  --warning-100: oklch(0.96 0.07 85);
+  --warning-300: oklch(0.88 0.15 80);
+  --warning-400: oklch(0.83 0.16 75);
+  --warning-500: oklch(0.77 0.16 70);
+  --warning-600: oklch(0.66 0.15 60);
+  --warning-700: oklch(0.55 0.13 55);
+  --warning-900: oklch(0.34 0.075 55);
+  --warning-950: oklch(0.26 0.055 55);
+
+  --danger-50: oklch(0.97 0.015 25);
+  --danger-100: oklch(0.935 0.035 25);
+  --danger-300: oklch(0.8 0.11 25);
+  --danger-400: oklch(0.71 0.17 25);
+  --danger-500: oklch(0.64 0.21 25);
+  --danger-600: oklch(0.577 0.22 27);
+  --danger-700: oklch(0.505 0.19 27);
+  --danger-900: oklch(0.32 0.1 25);
+  --danger-950: oklch(0.25 0.075 25);
+
+  --info-50: oklch(0.975 0.015 230);
+  --info-100: oklch(0.94 0.04 230);
+  --info-300: oklch(0.82 0.1 230);
+  --info-400: oklch(0.74 0.13 230);
+  --info-500: oklch(0.66 0.14 235);
+  --info-600: oklch(0.57 0.14 240);
+  --info-700: oklch(0.49 0.12 240);
+  --info-900: oklch(0.31 0.07 240);
+  --info-950: oklch(0.24 0.05 240);
+
+  /* Categorical data-viz hues (series 2..8; series 1 is always the brand). */
+  --viz-teal: oklch(0.7 0.13 185);
+  --viz-amber: oklch(0.77 0.15 70);
+  --viz-rose: oklch(0.66 0.19 10);
+  --viz-violet: oklch(0.62 0.2 300);
+  --viz-lime: oklch(0.78 0.17 130);
+  --viz-sky: oklch(0.7 0.13 235);
+  --viz-slate: oklch(0.6 0.02 265);
+
+  /* Illustration skin tones (fixed, not themed). */
+  --skin-1: oklch(0.8 0.08 20);
+  --skin-2: oklch(0.55 0.1 15);
+
+  /* Non-color primitives */
+  --radius-base: 0.625rem;
+  --font-sans-stack: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display-stack: var(--font-display-face), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Alternate brands: only re-map brand primitives. */
+[data-brand="cobalt"] {
+  --brand-hue: 262;
+  --brand-chroma: 1;
+}
+
+[data-brand="violet"] {
+  --brand-hue: 293;
+  --brand-chroma: 1.02;
+}
+
+[data-brand="emerald"] {
+  --brand-hue: 162;
+  --brand-chroma: 0.78;
+}
+
+[data-brand="amber"] {
+  --brand-hue: 55;
+  --brand-chroma: 0.92;
+}
+
+/* ------------------------------------------------------------------ */
+/* Layer 2 — semantics (light is the default)                         */
+/* ------------------------------------------------------------------ */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: var(--neutral-0);
+  --color-bg-subtle: var(--neutral-50);
+  --color-surface: var(--neutral-0);
+  --color-surface-raised: var(--neutral-0);
+  --color-fg: var(--neutral-950);
+  --color-fg-muted: var(--neutral-600);
+  --color-fg-subtle: var(--neutral-500);
+  --color-border: var(--neutral-200);
+  --color-border-strong: var(--neutral-300);
+  --color-input: var(--neutral-300);
+
+  --color-primary: var(--brand-600);
+  --color-primary-fg: var(--neutral-0);
+  --color-primary-hover: var(--brand-700);
+  --color-accent: var(--brand-50);
+  --color-accent-fg: var(--brand-800);
+  --color-ring: var(--brand-500);
+  --color-overlay: oklch(0.145 0.007 265 / 0.45);
+
+  --color-success: var(--success-600);
+  --color-success-fg: var(--success-700);
+  --color-success-subtle: var(--success-50);
+  --color-warning: var(--warning-500);
+  --color-warning-fg: var(--warning-700);
+  --color-warning-subtle: var(--warning-50);
+  --color-danger: var(--danger-600);
+  --color-danger-fg: var(--danger-700);
+  --color-danger-subtle: var(--danger-50);
+  --color-info: var(--info-600);
+  --color-info-fg: var(--info-700);
+  --color-info-subtle: var(--info-50);
+  /* Text/icon color placed ON a solid status fill (e.g. bg-danger). */
+  --color-on-status: var(--neutral-0);
+
+  --color-chart-1: var(--brand-500);
+  --color-chart-2: var(--viz-teal);
+  --color-chart-3: var(--viz-amber);
+  --color-chart-4: var(--viz-rose);
+  --color-chart-5: var(--viz-violet);
+  --color-chart-6: var(--viz-lime);
+  --color-chart-7: var(--viz-sky);
+  --color-chart-8: var(--viz-slate);
+
+  /* Sequential heat scale: low → high, derived from the brand. */
+  --color-heat-0: var(--neutral-100);
+  --color-heat-1: var(--brand-100);
+  --color-heat-2: var(--brand-200);
+  --color-heat-3: var(--brand-300);
+  --color-heat-4: var(--brand-400);
+  --color-heat-5: var(--brand-500);
+  --color-heat-6: var(--brand-700);
+
+  /* Illustration palette */
+  --color-illus-ink: var(--neutral-900);
+  --color-illus-line: var(--neutral-700);
+  --color-illus-soft: var(--neutral-200);
+  --color-illus-paper: var(--neutral-100);
+  --color-illus-mid: var(--neutral-400);
+
+  --shadow-xs: 0 1px 2px 0 oklch(0.2 0.01 265 / 0.05);
+  --shadow-sm: 0 1px 3px 0 oklch(0.2 0.01 265 / 0.08), 0 1px 2px -1px oklch(0.2 0.01 265 / 0.06);
+  --shadow-md: 0 4px 12px -2px oklch(0.2 0.01 265 / 0.08), 0 2px 4px -2px oklch(0.2 0.01 265 / 0.06);
+  --shadow-lg: 0 18px 40px -12px oklch(0.2 0.02 265 / 0.18), 0 4px 10px -4px oklch(0.2 0.01 265 / 0.08);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: var(--neutral-950);
+  --color-bg-subtle: var(--neutral-925);
+  --color-surface: var(--neutral-900);
+  --color-surface-raised: var(--neutral-850);
+  --color-fg: var(--neutral-50);
+  --color-fg-muted: var(--neutral-400);
+  --color-fg-subtle: var(--neutral-500);
+  --color-border: var(--neutral-800);
+  --color-border-strong: var(--neutral-700);
+  --color-input: var(--neutral-700);
+
+  --color-primary: var(--brand-400);
+  --color-primary-fg: var(--brand-950);
+  --color-primary-hover: var(--brand-300);
+  --color-accent: color-mix(in oklch, var(--brand-900) 45%, var(--neutral-900));
+  --color-accent-fg: var(--brand-200);
+  --color-ring: var(--brand-400);
+  --color-overlay: oklch(0 0 0 / 0.6);
+
+  --color-success: var(--success-500);
+  --color-success-fg: var(--success-300);
+  --color-success-subtle: var(--success-950);
+  --color-warning: var(--warning-500);
+  --color-warning-fg: var(--warning-300);
+  --color-warning-subtle: var(--warning-950);
+  --color-danger: var(--danger-500);
+  --color-danger-fg: var(--danger-300);
+  --color-danger-subtle: var(--danger-950);
+  --color-info: var(--info-500);
+  --color-info-fg: var(--info-300);
+  --color-info-subtle: var(--info-950);
+  --color-on-status: var(--neutral-0);
+
+  --color-chart-1: var(--brand-400);
+
+  --color-heat-0: var(--neutral-850);
+  --color-heat-1: var(--brand-950);
+  --color-heat-2: var(--brand-900);
+  --color-heat-3: var(--brand-800);
+  --color-heat-4: var(--brand-600);
+  --color-heat-5: var(--brand-500);
+  --color-heat-6: var(--brand-300);
+
+  --color-illus-ink: var(--neutral-200);
+  --color-illus-line: var(--neutral-400);
+  --color-illus-soft: var(--neutral-700);
+  --color-illus-paper: var(--neutral-800);
+  --color-illus-mid: var(--neutral-600);
+
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.4), 0 1px 2px -1px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px oklch(0 0 0 / 0.45), 0 2px 4px -2px oklch(0 0 0 / 0.3);
+  --shadow-lg: 0 18px 40px -12px oklch(0 0 0 / 0.6), 0 4px 10px -4px oklch(0 0 0 / 0.35);
+}
+
+/* ------------------------------------------------------------------ */
+/* shadcn/ui compatibility: its variable names → our semantics         */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --radius: var(--radius-base);
+  --background: var(--color-bg);
+  --foreground: var(--color-fg);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-fg);
+  --popover: var(--color-surface-raised);
+  --popover-foreground: var(--color-fg);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-primary-fg);
+  --secondary: var(--color-bg-subtle);
+  --secondary-foreground: var(--color-fg);
+  --muted: var(--color-bg-subtle);
+  --muted-foreground: var(--color-fg-muted);
+  --accent: var(--color-accent);
+  --accent-foreground: var(--color-accent-fg);
+  --destructive: var(--color-danger);
+  --destructive-foreground: var(--color-on-status);
+  --border: var(--color-border);
+  --input: var(--color-input);
+  --ring: var(--color-ring);
+}

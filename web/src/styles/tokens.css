@@ -20,9 +20,10 @@
 
 :root {
   /*
-   * Brand scale. The default brand ("cobalt") is generated from a single
+   * Brand scale. The default brand ("adwise") is generated from a single
    * hue + chroma multiplier, so swapping the brand is one edit here or one
-   * [data-brand] block below.
+   * [data-brand] block below. The logo's gradients (public/brand) are drawn
+   * in this hue family.
    */
   --brand-hue: 262;
   --brand-chroma: 1;
@@ -132,7 +133,7 @@
 }
 
 /* Alternate brands: only re-map brand primitives. */
-[data-brand="cobalt"] {
+[data-brand="adwise"] {
   --brand-hue: 262;
   --brand-chroma: 1;
 }

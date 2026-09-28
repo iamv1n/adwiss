@@ -6,6 +6,7 @@
 // deterministic per (campaign, date), so a second run changes nothing.
 //
 // Login: demo@adwise.dev / demopassword1
+// Admin console (/admin): admin@adwise.com / AdminPass#1
 package main
 
 import (
@@ -29,9 +30,12 @@ import (
 const (
 	demoEmail    = "demo@adwise.dev"
 	demoPassword = "demopassword1"
-	days         = 90
-	tzName       = "Asia/Kolkata"
-	currency     = "INR"
+	// Development-only platform admin for the /admin console.
+	adminEmail    = "admin@adwise.com"
+	adminPassword = "AdminPass#1"
+	days          = 90
+	tzName        = "Asia/Kolkata"
+	currency      = "INR"
 )
 
 func main() {
@@ -109,7 +113,7 @@ func run() error {
 	}
 
 	slog.Info("seed complete",
-		"organization_id", orgID, "login", demoEmail+" / "+demoPassword,
+		"organization_id", orgID, "login", demoEmail+" / "+demoPassword, "admin_login", adminEmail+" / "+adminPassword,
 		"campaigns", len(tree.campaigns), "ad_groups", len(tree.adGroups), "ads", len(tree.ads),
 		"facts", len(facts), "from", end.AddDate(0, 0, -(days-1)).Format(time.DateOnly), "to", end.Format(time.DateOnly),
 		"duration", time.Since(start).Round(time.Millisecond))
@@ -127,6 +131,16 @@ INSERT INTO users (email, name, password_hash) VALUES ($1, 'Demo User', $2)
 ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, updated_at = now()
 RETURNING id`, demoEmail, hash).Scan(&userID); err != nil {
 		return uuid.Nil, nil, fmt.Errorf("user: %w", err)
+	}
+	adminHash, err := auth.HashPassword(adminPassword)
+	if err != nil {
+		return uuid.Nil, nil, err
+	}
+	if _, err := db.Pool.Exec(ctx, `
+INSERT INTO users (email, name, password_hash, is_platform_admin) VALUES ($1, 'Platform Admin', $2, true)
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, is_platform_admin = true, updated_at = now()`,
+		adminEmail, adminHash); err != nil {
+		return uuid.Nil, nil, fmt.Errorf("admin user: %w", err)
 	}
 	if err := db.Pool.QueryRow(ctx, `
 INSERT INTO organizations (name, slug) VALUES ('Demo Co', 'demo-co')
@@ -394,7 +408,7 @@ func generateFacts(camps []profile, end time.Time, nowHour int) []ads.MetricFact
 			}
 			facts = append(facts, fact(p, reports.CampaignDaily, ds, nil, day))
 			if !isToday {
-				facts = append(facts, breakdowns(r, p, ds, day)...)
+				facts = append(facts, breakdowns(r, p, ds, day, daysAgo)...)
 			}
 		}
 	}
@@ -510,7 +524,7 @@ var keywords = [][]string{
 	{"[sports shoes men]", "\"best running shoes\"", "+trail +running +shoes"},
 }
 
-func breakdowns(r *rand.Rand, p profile, date string, day sums) []ads.MetricFact {
+func breakdowns(r *rand.Rand, p profile, date string, day sums, daysAgo int) []ads.MetricFact {
 	var out []ads.MetricFact
 	emit := func(report string, segs []segment, set func(f *ads.MetricFact, s segment)) {
 		for i, s := range splitDay(r, day, segs) {
@@ -545,6 +559,17 @@ func breakdowns(r *rand.Rand, p profile, date string, day sums) []ads.MetricFact
 		}
 	}
 	perAd := splitDay(r, day, adSegs)
+	// Creative fatigue (internal/recommendations): in "drop" campaigns the
+	// first ad's CTR sags over the last 10 days while it is shown to the same
+	// people more often; its lost clicks go to its sibling so ad totals still
+	// add up to the campaign.
+	fatigue := 0.0
+	if p.kind == "drop" && daysAgo < 10 {
+		fatigue = float64(10-daysAgo) / 10
+		moved := int64(float64(perAd[0].clicks) * 0.45 * fatigue)
+		perAd[0].clicks -= moved
+		perAd[1].clicks += moved
+	}
 	for i, s := range perAd {
 		if s.impressions == 0 && s.spend == 0 {
 			continue
@@ -552,6 +577,16 @@ func breakdowns(r *rand.Rand, p profile, date string, day sums) []ads.MetricFact
 		g, a := i/2, i%2
 		f := fact(p, reports.AdDaily, date, nil, s)
 		f.AdGroupExternalID, f.AdExternalID = adSegs[i].a, adSegs[i].b
+		if p.Provider == ads.ProviderMeta {
+			// Daily reach (Meta reports it; Google does not): ~1.3 impressions
+			// per person per day, rising to ~3.9 for the fatiguing ad.
+			freq := 1.25 + 0.1*float64(a)
+			if i == 0 {
+				freq += 2.6 * fatigue
+			}
+			reach := int64(float64(s.impressions) / freq)
+			f.Reach = &reach
+		}
 		out = append(out, f)
 		c := fact(p, reports.CreativeDaily, date, nil, s)
 		c.CreativeExternalID = creativeID(p.Campaign, g, a)

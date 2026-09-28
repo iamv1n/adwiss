@@ -251,7 +251,7 @@ func TestFetchReport(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	c := New(Options{TokenSource: oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "x"})})
 	caps := c.Capabilities()
-	for _, r := range []string{"campaign_daily", "campaign_hourly", "campaign_country_daily", "campaign_device_daily", "ad_group_daily", "ad_daily", "keyword_daily", "search_term_daily", "campaign_publisher_platform_daily"} {
+	for _, r := range []string{"campaign_daily", "campaign_hourly", "campaign_country_daily", "campaign_device_daily", "ad_daily", "keyword_daily", "search_term_daily"} {
 		require.Contains(t, caps.Reports, r)
 	}
 	require.NotContains(t, caps.Reports, "campaign_placement_daily")

@@ -19,6 +19,7 @@ import (
 	"github.com/iamv1n/adwise/internal/organizations"
 	"github.com/iamv1n/adwise/internal/providers"
 	"github.com/iamv1n/adwise/internal/queue"
+	reportreg "github.com/iamv1n/adwise/internal/reports"
 	"github.com/iamv1n/adwise/internal/store"
 )
 
@@ -133,6 +134,7 @@ func (s *Service) RequestSync(ctx context.Context, m organizations.Membership, i
 	if err != nil {
 		return SyncResult{}, fmt.Errorf("enqueue sync: %w", err)
 	}
+	s.progressReset(ctx, id, ProgressQueued)
 	return res, nil
 }
 
@@ -160,6 +162,21 @@ type Worker struct {
 	rdb      *redis.Client
 	enqueuer Enqueuer
 	lockTTL  time.Duration
+	leads    LeadSink
+}
+
+// LeadSink stores imported lead-form leads (implemented by internal/leads).
+type LeadSink interface {
+	// SyncTargets returns the provider IDs of the account's ads that can
+	// collect leads and the time to import from.
+	SyncTargets(ctx context.Context, orgID uuid.UUID, provider ads.Provider, accountID string) ([]string, time.Time, error)
+	UpsertImported(ctx context.Context, orgID uuid.UUID, provider ads.Provider, accountID string, leads []ads.Lead) (int, error)
+}
+
+// WithLeads makes entity syncs also import lead-form leads.
+func (w *Worker) WithLeads(sink LeadSink) *Worker {
+	w.leads = sink
+	return w
 }
 
 func NewWorker(svc *Service, st ads.Store, rdb *redis.Client, enq Enqueuer) *Worker {
@@ -172,6 +189,7 @@ func (w *Worker) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(queue.TaskIntegrationSync, w.handleIntegrationSync)
 	mux.HandleFunc(queue.TaskEntitySync, w.handleEntitySync)
 	mux.HandleFunc(queue.TaskMetricSync, w.handleMetricSync)
+	mux.HandleFunc(queue.TaskLeadWebhook, w.handleLeadWebhook)
 }
 
 // retryAfterError asks asynq to retry after a specific delay.
@@ -197,6 +215,14 @@ func RetryDelay(n int, err error, t *asynq.Task) time.Duration {
 		return providers.Backoff(n, 30*time.Second, time.Hour)
 	}
 	return asynq.DefaultRetryDelayFunc(n, err, t)
+}
+
+// IsFailure is the worker's asynq IsFailure func. Waiting for another task's
+// per-account lock is not a failure: the task retries without using up an
+// attempt, so an account's many metric syncs queue behind each other instead
+// of dying after MaxRetry lost races.
+func IsFailure(err error) bool {
+	return err != nil && !errors.Is(err, errLocked)
 }
 
 // classifyTaskError decides between retry and giving up.
@@ -252,6 +278,14 @@ func (w *Worker) handleIntegrationSync(ctx context.Context, t *asynq.Task) error
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("decode payload: %v: %w", err, asynq.SkipRetry)
 	}
+	err := w.integrationSync(ctx, p)
+	if err != nil && finalAttempt(ctx, err) {
+		w.svc.progressFail(ctx, p.IntegrationID, err)
+	}
+	return err
+}
+
+func (w *Worker) integrationSync(ctx context.Context, p IntegrationSyncPayload) error {
 	integ, err := w.loadActive(ctx, p.OrganizationID, p.IntegrationID)
 	if err != nil {
 		return err
@@ -270,6 +304,7 @@ func (w *Worker) handleIntegrationSync(ctx context.Context, t *asynq.Task) error
 	if err != nil {
 		return err
 	}
+	w.svc.progressReset(ctx, p.IntegrationID, ProgressRunning, pAccountsTotal, len(accounts))
 	for _, acct := range accounts {
 		if err := w.enqueueEntity(ctx, EntitySyncPayload{OrganizationID: p.OrganizationID, IntegrationID: p.IntegrationID, AccountID: acct, Options: p.Options}); err != nil {
 			return err
@@ -303,6 +338,9 @@ func (w *Worker) enqueueMetric(ctx context.Context, p MetricSyncPayload) error {
 	if errors.Is(err, asynq.ErrTaskIDConflict) {
 		return nil
 	}
+	if err == nil {
+		w.svc.progressIncr(ctx, p.IntegrationID, pMetricsTotal, 1)
+	}
 	return err
 }
 
@@ -313,6 +351,15 @@ func (w *Worker) handleEntitySync(ctx context.Context, t *asynq.Task) error {
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("decode payload: %v: %w", err, asynq.SkipRetry)
 	}
+	err := w.entitySync(ctx, p)
+	if err == nil {
+		w.svc.progressIncr(ctx, p.IntegrationID, pEntitiesDone, 1)
+	}
+	w.svc.progressTaskError(ctx, p.IntegrationID, pEntitiesFailed, err)
+	return err
+}
+
+func (w *Worker) entitySync(ctx context.Context, p EntitySyncPayload) error {
 	integ, err := w.loadActive(ctx, p.OrganizationID, p.IntegrationID)
 	if err != nil {
 		return err
@@ -331,6 +378,7 @@ func (w *Worker) handleEntitySync(ctx context.Context, t *asynq.Task) error {
 		if err := w.syncEntities(ctx, client, p.OrganizationID, p.AccountID); err != nil {
 			return w.classifyTaskError(ctx, integ.ID, err)
 		}
+		w.syncLeads(ctx, client, p.OrganizationID, p.AccountID)
 	}
 	if p.Options.metrics() {
 		reports := client.Capabilities().Reports
@@ -340,6 +388,10 @@ func (w *Worker) handleEntitySync(ctx context.Context, t *asynq.Task) error {
 		for _, name := range reports {
 			def, ok := providers.CatalogReport(name)
 			if !ok {
+				continue
+			}
+			// Facts of an unregistered report would be rejected on write.
+			if _, ok := reportreg.Get(name); !ok {
 				continue
 			}
 			if err := w.enqueueMetric(ctx, MetricSyncPayload{
@@ -391,6 +443,15 @@ func (w *Worker) handleMetricSync(ctx context.Context, t *asynq.Task) error {
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return fmt.Errorf("decode payload: %v: %w", err, asynq.SkipRetry)
 	}
+	err := w.metricSync(ctx, p)
+	if err == nil {
+		w.svc.progressIncr(ctx, p.IntegrationID, pMetricsDone, 1)
+	}
+	w.svc.progressTaskError(ctx, p.IntegrationID, pMetricsFailed, err)
+	return err
+}
+
+func (w *Worker) metricSync(ctx context.Context, p MetricSyncPayload) error {
 	integ, err := w.loadActive(ctx, p.OrganizationID, p.IntegrationID)
 	if err != nil {
 		return err
@@ -440,4 +501,42 @@ func (w *Worker) lock(ctx context.Context, integID uuid.UUID, acct string) (func
 	return func() {
 		_ = unlockScript.Run(context.WithoutCancel(ctx), w.rdb, []string{key}, token).Err()
 	}, nil
+}
+
+// syncLeads imports new lead-form leads for an account's lead ads. Failures
+// are logged, not returned: leads are best effort and must not make the
+// entity sync retry (a connection made before leads_retrieval was requested
+// gets permission errors until it is reconnected).
+func (w *Worker) syncLeads(ctx context.Context, c ads.Client, orgID uuid.UUID, acct string) {
+	reader, ok := c.(ads.LeadReader)
+	if w.leads == nil || !ok {
+		return
+	}
+	log := w.svc.logger.With("organization_id", orgID, "account", acct)
+	adIDs, since, err := w.leads.SyncTargets(ctx, orgID, c.Provider(), acct)
+	if err != nil {
+		log.Warn("lead sync: targets", "err", err)
+		return
+	}
+	added := 0
+	for _, adID := range adIDs {
+		leads, err := reader.ListAdLeads(ctx, acct, adID, since)
+		if err != nil {
+			if errors.Is(err, providers.ErrPermissionDenied) || errors.Is(err, providers.ErrUnauthorized) {
+				log.Warn("lead sync: no permission to read leads; reconnect to grant leads_retrieval", "err", err)
+				return
+			}
+			log.Warn("lead sync: list", "ad", adID, "err", err)
+			continue
+		}
+		n, err := w.leads.UpsertImported(ctx, orgID, c.Provider(), acct, leads)
+		if err != nil {
+			log.Warn("lead sync: store", "ad", adID, "err", err)
+			continue
+		}
+		added += n
+	}
+	if added > 0 {
+		log.Info("lead sync: imported", "new_leads", added, "ads", len(adIDs))
+	}
 }

@@ -12,10 +12,49 @@ import (
 	"github.com/google/uuid"
 )
 
+const createImpersonationSession = `-- name: CreateImpersonationSession :one
+INSERT INTO sessions (user_id, token_hash, user_agent, ip_address, expires_at, impersonator_user_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, last_seen_at, created_at, impersonator_user_id
+`
+
+type CreateImpersonationSessionParams struct {
+	UserID             uuid.UUID  `json:"user_id"`
+	TokenHash          []byte     `json:"token_hash"`
+	UserAgent          string     `json:"user_agent"`
+	IpAddress          string     `json:"ip_address"`
+	ExpiresAt          time.Time  `json:"expires_at"`
+	ImpersonatorUserID *uuid.UUID `json:"impersonator_user_id"`
+}
+
+func (q *Queries) CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error) {
+	row := q.db.QueryRow(ctx, createImpersonationSession,
+		arg.UserID,
+		arg.TokenHash,
+		arg.UserAgent,
+		arg.IpAddress,
+		arg.ExpiresAt,
+		arg.ImpersonatorUserID,
+	)
+	var i Session
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.UserAgent,
+		&i.IpAddress,
+		&i.ExpiresAt,
+		&i.LastSeenAt,
+		&i.CreatedAt,
+		&i.ImpersonatorUserID,
+	)
+	return i, err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions (user_id, token_hash, user_agent, ip_address, expires_at)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, last_seen_at, created_at
+RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, last_seen_at, created_at, impersonator_user_id
 `
 
 type CreateSessionParams struct {
@@ -44,6 +83,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.ExpiresAt,
 		&i.LastSeenAt,
 		&i.CreatedAt,
+		&i.ImpersonatorUserID,
 	)
 	return i, err
 }
@@ -69,12 +109,25 @@ func (q *Queries) DeleteSession(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteUserSessions = `-- name: DeleteUserSessions :execrows
+DELETE FROM sessions WHERE user_id = $1
+`
+
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteUserSessions, userID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getSessionUserByTokenHash = `-- name: GetSessionUserByTokenHash :one
 SELECT
     sessions.id AS session_id,
     sessions.expires_at,
     sessions.last_seen_at,
-    users.id, users.email, users.name, users.password_hash, users.created_at, users.updated_at
+    sessions.impersonator_user_id,
+    users.id, users.email, users.name, users.password_hash, users.created_at, users.updated_at, users.is_platform_admin
 FROM sessions
 JOIN users ON users.id = sessions.user_id
 WHERE sessions.token_hash = $1
@@ -82,10 +135,11 @@ WHERE sessions.token_hash = $1
 `
 
 type GetSessionUserByTokenHashRow struct {
-	SessionID  uuid.UUID `json:"session_id"`
-	ExpiresAt  time.Time `json:"expires_at"`
-	LastSeenAt time.Time `json:"last_seen_at"`
-	User       User      `json:"user"`
+	SessionID          uuid.UUID  `json:"session_id"`
+	ExpiresAt          time.Time  `json:"expires_at"`
+	LastSeenAt         time.Time  `json:"last_seen_at"`
+	ImpersonatorUserID *uuid.UUID `json:"impersonator_user_id"`
+	User               User       `json:"user"`
 }
 
 func (q *Queries) GetSessionUserByTokenHash(ctx context.Context, tokenHash []byte) (GetSessionUserByTokenHashRow, error) {
@@ -95,12 +149,14 @@ func (q *Queries) GetSessionUserByTokenHash(ctx context.Context, tokenHash []byt
 		&i.SessionID,
 		&i.ExpiresAt,
 		&i.LastSeenAt,
+		&i.ImpersonatorUserID,
 		&i.User.ID,
 		&i.User.Email,
 		&i.User.Name,
 		&i.User.PasswordHash,
 		&i.User.CreatedAt,
 		&i.User.UpdatedAt,
+		&i.User.IsPlatformAdmin,
 	)
 	return i, err
 }

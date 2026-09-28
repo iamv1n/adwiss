@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, name, password_hash)
 VALUES ($1, $2, $3)
-RETURNING id, email, name, password_hash, created_at, updated_at
+RETURNING id, email, name, password_hash, created_at, updated_at, is_platform_admin
 `
 
 type CreateUserParams struct {
@@ -33,12 +33,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPlatformAdmin,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE email = $1
+SELECT id, email, name, password_hash, created_at, updated_at, is_platform_admin FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -51,12 +52,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPlatformAdmin,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, name, password_hash, created_at, updated_at FROM users WHERE id = $1
+SELECT id, email, name, password_hash, created_at, updated_at, is_platform_admin FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -69,6 +71,33 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsPlatformAdmin,
+	)
+	return i, err
+}
+
+const setPlatformAdmin = `-- name: SetPlatformAdmin :one
+UPDATE users SET is_platform_admin = $2, updated_at = now()
+WHERE email = $1
+RETURNING id, email, name, password_hash, created_at, updated_at, is_platform_admin
+`
+
+type SetPlatformAdminParams struct {
+	Email           string `json:"email"`
+	IsPlatformAdmin bool   `json:"is_platform_admin"`
+}
+
+func (q *Queries) SetPlatformAdmin(ctx context.Context, arg SetPlatformAdminParams) (User, error) {
+	row := q.db.QueryRow(ctx, setPlatformAdmin, arg.Email, arg.IsPlatformAdmin)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.IsPlatformAdmin,
 	)
 	return i, err
 }

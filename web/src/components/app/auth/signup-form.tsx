@@ -27,8 +27,8 @@ export function SignupForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (me.data) router.replace(next);
-  }, [me.data, next, router]);
+    if (me.data && !signup.isPending && !signup.isSuccess) router.replace(next);
+  }, [me.data, next, router, signup.isPending, signup.isSuccess]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,7 +44,8 @@ export function SignupForm() {
     }
     try {
       await signup.mutateAsync({ name: name.trim(), email: email.trim(), password });
-      router.replace(next);
+      // We just emailed a verification code; confirm it before continuing to `next`.
+      router.replace(`/verify-email?next=${encodeURIComponent(next)}`);
     } catch (err) {
       if (isApiError(err)) {
         setFields(err.fields);

@@ -41,6 +41,11 @@ const (
 	TaskIntegrationSyncAll = "integration:sync_all"
 	TaskEntitySync         = "integration:entity_sync"
 	TaskMetricSync         = "integration:metric_sync"
+
+	// TaskLeadWebhook imports one lead pushed by Meta's leadgen webhook
+	// (internal/integrations). Task ID "meta-lead:<leadgen_id>" dedupes
+	// Meta's redeliveries.
+	TaskLeadWebhook = "leads:webhook_lead"
 )
 
 // RedisOpt converts a redis:// URL into asynq connection options.

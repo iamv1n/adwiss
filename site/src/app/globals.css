@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/tokens.css";
+
+/* Dark variant follows the data-theme attribute set by next-themes. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Expose semantic tokens to Tailwind. `inline` makes utilities reference the
+ * runtime CSS variable, so switching [data-theme]/[data-brand] re-themes
+ * everything without rebuilding CSS.
+ *
+ * The default Tailwind palette is removed (`--color-*: initial`) so raw
+ * palette utilities such as bg-blue-500 / text-zinc-400 do not exist.
+ */
+@theme inline reference {
+  --color-*: initial;
+
+  /* Adwise semantic tokens */
+  --color-bg: var(--color-bg);
+  --color-bg-subtle: var(--color-bg-subtle);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-fg-subtle: var(--color-fg-subtle);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-primary: var(--color-primary);
+  --color-primary-fg: var(--color-primary-fg);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-accent: var(--color-accent);
+  --color-accent-fg: var(--color-accent-fg);
+  --color-ring: var(--color-ring);
+  --color-overlay: var(--color-overlay);
+  --color-success: var(--color-success);
+  --color-success-fg: var(--color-success-fg);
+  --color-success-subtle: var(--color-success-subtle);
+  --color-warning: var(--color-warning);
+  --color-warning-fg: var(--color-warning-fg);
+  --color-warning-subtle: var(--color-warning-subtle);
+  --color-danger: var(--color-danger);
+  --color-danger-fg: var(--color-danger-fg);
+  --color-danger-subtle: var(--color-danger-subtle);
+  --color-info: var(--color-info);
+  --color-info-fg: var(--color-info-fg);
+  --color-info-subtle: var(--color-info-subtle);
+  --color-on-status: var(--color-on-status);
+  --color-chart-1: var(--color-chart-1);
+  --color-chart-2: var(--color-chart-2);
+  --color-chart-3: var(--color-chart-3);
+  --color-chart-4: var(--color-chart-4);
+  --color-chart-5: var(--color-chart-5);
+  --color-chart-6: var(--color-chart-6);
+  --color-chart-7: var(--color-chart-7);
+  --color-chart-8: var(--color-chart-8);
+  --color-heat-0: var(--color-heat-0);
+  --color-heat-1: var(--color-heat-1);
+  --color-heat-2: var(--color-heat-2);
+  --color-heat-3: var(--color-heat-3);
+  --color-heat-4: var(--color-heat-4);
+  --color-heat-5: var(--color-heat-5);
+  --color-heat-6: var(--color-heat-6);
+  --color-brand-swatch: var(--color-brand-swatch);
+  --color-illus-ink: var(--color-illus-ink);
+  --color-illus-line: var(--color-illus-line);
+  --color-illus-soft: var(--color-illus-soft);
+  --color-illus-paper: var(--color-illus-paper);
+  --color-illus-mid: var(--color-illus-mid);
+
+  /* Utility keywords kept on purpose */
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-inherit: inherit;
+
+  /* shadcn/ui names (used by src/components/ui) → same semantics */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Shadows */
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  /* Fonts (next/font variables are set on <html> in app/layout.tsx) */
+  --font-sans: var(--font-sans-stack);
+  --font-display: var(--font-display-stack);
+  --font-mono: var(--font-mono-stack);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    /* Thin, trackless scrollbars so they don't crowd sheets and dialogs. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-strong);
+    border-radius: 9999px;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-primary) 25%, transparent);
+  }
+}

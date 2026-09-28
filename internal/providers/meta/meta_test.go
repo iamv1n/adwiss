@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +41,10 @@ func newFakeGraph(t *testing.T) (*fakeGraph, *Client, *[]time.Duration) {
 		fg.requests = append(fg.requests, r)
 		fg.forms = append(fg.forms, r.Form)
 		fg.mu.Unlock()
-		require.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+		// Page access tokens (page subscribe tests) are named "page-*".
+		if a := r.Header.Get("Authorization"); !strings.HasPrefix(a, "Bearer page-") {
+			require.Equal(t, "Bearer test-token", a)
+		}
 		key := r.Method + " " + r.URL.Path
 		h, ok := fg.handlers[key]
 		if !ok {

@@ -26,6 +26,7 @@ func (h *Handlers) Register(r chi.Router) {
 	r.Get("/orgs/{orgID}/analytics/dayparting", httpx.Handler(h.dayparting))
 	r.Get("/orgs/{orgID}/analytics/breakdowns", httpx.Handler(h.breakdowns))
 	r.Get("/orgs/{orgID}/analytics/wasted-spend", httpx.Handler(h.wastedSpend))
+	r.Get("/orgs/{orgID}/analytics/series", httpx.Handler(h.series))
 }
 
 func parseScope(r *http.Request, allowCompare bool) (Scope, error) {

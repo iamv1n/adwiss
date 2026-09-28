@@ -66,6 +66,10 @@ type Service struct {
 	webBaseURL string
 	logger     *slog.Logger
 	now        func() time.Time
+
+	// Meta leadgen webhook (leadwebhook.go).
+	metaAppSecret          string
+	metaWebhookVerifyToken string
 }
 
 type Options struct {
@@ -77,6 +81,11 @@ type Options struct {
 	Enqueuer   Enqueuer // optional; nil disables POST .../sync
 	WebBaseURL string
 	Logger     *slog.Logger
+
+	// MetaAppSecret verifies webhook signatures; MetaWebhookVerifyToken
+	// answers the webhook handshake. Empty disables each.
+	MetaAppSecret          string
+	MetaWebhookVerifyToken string
 }
 
 func NewService(o Options) *Service {
@@ -86,6 +95,7 @@ func NewService(o Options) *Service {
 	return &Service{
 		db: o.DB, rdb: o.Redis, keys: o.Keys, store: o.Store, apps: o.Apps, enqueuer: o.Enqueuer,
 		webBaseURL: strings.TrimRight(o.WebBaseURL, "/"), logger: o.Logger, now: time.Now,
+		metaAppSecret: o.MetaAppSecret, metaWebhookVerifyToken: o.MetaWebhookVerifyToken,
 	}
 }
 

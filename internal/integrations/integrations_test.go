@@ -27,6 +27,7 @@ import (
 	"github.com/iamv1n/adwise/internal/platform/database"
 	"github.com/iamv1n/adwise/internal/platform/secrets"
 	"github.com/iamv1n/adwise/internal/providers"
+	"github.com/iamv1n/adwise/internal/providers/meta"
 	"github.com/iamv1n/adwise/internal/queue"
 	"github.com/iamv1n/adwise/internal/store"
 )
@@ -97,6 +98,10 @@ type fakeClient struct {
 	accountsErr error
 	reportErr   error
 	tokens      oauth2.TokenSource
+	// Meta lead / Page fakes (leadwebhook_test.go).
+	leadErr    error
+	pages      []meta.ManagedPage
+	subscribed *subscribeLog
 }
 
 func (f *fakeClient) Provider() ads.Provider { return ads.ProviderMeta }

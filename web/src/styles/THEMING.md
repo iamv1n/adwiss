@@ -71,7 +71,7 @@ Both attributes live on `<html>`:
 | Attribute | Values | Set by |
 | --- | --- | --- |
 | `data-theme` | `light`, `dark` | `next-themes` (`attribute="data-theme"`, supports `system`). It injects a pre-paint script, so the wrong theme never flashes. |
-| `data-brand` | *(absent = cobalt)*, `violet`, `emerald`, `amber` | `useBrand()`, persisted in `localStorage["adwise-brand"]`, applied before paint by `brandInitScript` in `app/layout.tsx` |
+| `data-brand` | *(absent = adwise)*, `violet`, `emerald`, `amber` | `useBrand()`, persisted in `localStorage["adwise-brand"]`, applied before paint by `brandInitScript` in `app/layout.tsx` |
 
 The Tailwind `dark:` variant is bound to `[data-theme="dark"]` (see `@custom-variant` in `globals.css`). Most components shouldn't need `dark:`: the semantic tokens already change per theme.
 

@@ -26,6 +26,9 @@ type Integrations struct {
 	MetaAppSecret            string
 	MetaAPIVersion           string // optional override, e.g. v26.0
 	MetaConversionActionType string // default purchase
+	// MetaWebhookVerifyToken is the "Verify token" entered in the Meta App
+	// Dashboard for the leadgen webhook (GET /v1/webhooks/meta handshake).
+	MetaWebhookVerifyToken string
 
 	GoogleClientID        string
 	GoogleClientSecret    string
@@ -48,6 +51,7 @@ func loadIntegrations(cfg Config) (Integrations, error) {
 		MetaAppSecret:            os.Getenv("META_APP_SECRET"),
 		MetaAPIVersion:           os.Getenv("META_API_VERSION"),
 		MetaConversionActionType: os.Getenv("META_CONVERSION_ACTION_TYPE"),
+		MetaWebhookVerifyToken:   os.Getenv("META_WEBHOOK_VERIFY_TOKEN"),
 		GoogleClientID:           os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret:       os.Getenv("GOOGLE_CLIENT_SECRET"),
 		GoogleDeveloperToken:     os.Getenv("GOOGLE_DEVELOPER_TOKEN"),

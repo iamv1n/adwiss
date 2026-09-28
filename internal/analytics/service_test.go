@@ -15,6 +15,7 @@ import (
 	"github.com/iamv1n/adwise/internal/analytics/params"
 	"github.com/iamv1n/adwise/internal/entities"
 	"github.com/iamv1n/adwise/internal/metrics"
+	"github.com/iamv1n/adwise/internal/platform/database"
 	"github.com/iamv1n/adwise/internal/platform/testdb"
 	"github.com/iamv1n/adwise/internal/reports"
 )
@@ -36,6 +37,7 @@ type env struct {
 	inAcc uuid.UUID // Meta, INR, Asia/Kolkata
 	usAcc uuid.UUID // Google, USD, America/New_York
 	st    *entities.Store
+	db    *database.DB
 }
 
 // setup creates a Meta INR account in Asia/Kolkata and a Google USD account
@@ -56,7 +58,7 @@ func setup(t *testing.T) env {
 		{Provider: ads.ProviderMeta, AccountExternalID: "act_in", ExternalID: "c_in", Name: "India camp", Status: ads.StatusActive, DailyBudget: &budget},
 		{Provider: ads.ProviderGoogle, AccountExternalID: "cust_us", ExternalID: "c_us", Name: "US camp", Status: ads.StatusActive},
 	}))
-	e := env{svc: analytics.NewService(db, metrics.NewPostgresRepository(db.Pool)), org: fx.OrganizationID, st: st}
+	e := env{svc: analytics.NewService(db, metrics.NewPostgresRepository(db.Pool)), org: fx.OrganizationID, st: st, db: db}
 	require.NoError(t, db.Pool.QueryRow(ctx, `SELECT id FROM ad_accounts WHERE organization_id = $1 AND external_id = 'act_in'`, e.org).Scan(&e.inAcc))
 	require.NoError(t, db.Pool.QueryRow(ctx, `SELECT id FROM ad_accounts WHERE organization_id = $1 AND external_id = 'cust_us'`, e.org).Scan(&e.usAcc))
 	return e

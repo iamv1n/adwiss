@@ -27,24 +27,34 @@ func NewHandlers(svc *Service) *Handlers { return &Handlers{svc: svc} }
 //	DELETE /orgs/{orgID}/integrations/{integrationID}         admin+
 //	POST   /orgs/{orgID}/integrations/{integrationID}/discover admin+
 //	POST   /orgs/{orgID}/integrations/{integrationID}/sync     admin+
+//	GET    /orgs/{orgID}/integrations/{integrationID}/sync/progress member+
+//	POST   /orgs/{orgID}/leads/instant                        admin+ (subscribe Pages to the leadgen webhook)
 func (h *Handlers) Register(r chi.Router) {
 	r.Get("/orgs/{orgID}/integrations", httpx.Handler(h.list))
+	r.Get("/orgs/{orgID}/integrations/{integrationID}/sync/progress", httpx.Handler(h.syncProgress))
 	r.Group(func(r chi.Router) {
 		r.Use(organizations.RequireRole(organizations.RoleAdmin))
 		r.Post("/orgs/{orgID}/integrations/{provider:meta|google}/connect", httpx.Handler(h.connect))
 		r.Delete("/orgs/{orgID}/integrations/{integrationID}", httpx.Handler(h.disconnect))
 		r.Post("/orgs/{orgID}/integrations/{integrationID}/discover", httpx.Handler(h.discover))
 		r.Post("/orgs/{orgID}/integrations/{integrationID}/sync", httpx.Handler(h.sync))
+		r.Post("/orgs/{orgID}/leads/instant", httpx.Handler(h.enableInstantLeads))
 	})
 }
 
 // RegisterPublic adds the OAuth callback, which is a browser redirect from the
 // provider: no session is required because the one-time state binds the org
-// and user. Mount it outside RequireUser.
+// and user. Mount it outside RequireUser. The Meta webhook is authenticated
+// by its verify token (handshake) and X-Hub-Signature-256 (deliveries); see
+// leadwebhook.go.
 //
-//	GET /integrations/{provider}/callback
+//	GET  /integrations/{provider}/callback
+//	GET  /webhooks/meta   verification handshake
+//	POST /webhooks/meta   leadgen deliveries
 func (h *Handlers) RegisterPublic(r chi.Router) {
 	r.Get("/integrations/{provider}/callback", h.callback)
+	r.Get("/webhooks/meta", h.webhookVerify)
+	r.Post("/webhooks/meta", httpx.Handler(h.webhookReceive))
 }
 
 func (h *Handlers) list(w http.ResponseWriter, r *http.Request) error {
@@ -153,6 +163,19 @@ func (h *Handlers) sync(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	httpx.JSON(w, http.StatusAccepted, res)
+	return nil
+}
+
+func (h *Handlers) syncProgress(w http.ResponseWriter, r *http.Request) error {
+	id, err := uuidParam(r, "integrationID")
+	if err != nil {
+		return err
+	}
+	p, err := h.svc.SyncProgress(r.Context(), organizations.MembershipFromContext(r.Context()).OrganizationID, id)
+	if err != nil {
+		return err
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"progress": p})
 	return nil
 }
 
