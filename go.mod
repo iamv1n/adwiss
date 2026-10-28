@@ -3,7 +3,8 @@ module github.com/iamv1n/adwise
 go 1.27.1
 
 require (
-	github.com/go-chi/chi/v5 v5.3.2
+	github.com/anthropics/anthropic-sdk-go v1.75.0
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/google/uuid v1.6.0
 	github.com/hibiken/asynq v0.26.0
@@ -18,7 +19,6 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.75.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
